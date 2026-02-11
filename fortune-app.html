@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🔮 오늘의 운세 뽑기</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0c29">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-start: #0f0c29;
+    --bg-mid: #302b63;
+    --bg-end: #24243e;
+    --gold: #ffd700;
+    --gold-dim: #b8960c;
+    --card-bg: rgba(255, 255, 255, 0.06);
+    --text: #f0e6ff;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    overflow: hidden;
+    padding: 20px;
+  }
+
+  /* Floating stars background */
+  .stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite alternate;
+    opacity: 0;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.1; transform: scale(0.8); }
+    100% { opacity: 0.9; transform: scale(1.3); }
+  }
+
+  .app-container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+  }
+
+  .title {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 2.4rem;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+    margin-bottom: 8px;
+    animation: floatTitle 3s ease-in-out infinite;
+  }
+  @keyframes floatTitle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    color: rgba(240, 230, 255, 0.6);
+    margin-bottom: 36px;
+    letter-spacing: 2px;
+  }
+
+  /* Fortune card */
+  .fortune-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 24px;
+    padding: 32px 24px;
+    margin-bottom: 32px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .fortune-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.05), transparent, rgba(255, 215, 0, 0.03), transparent);
+    animation: shimmer 8s linear infinite;
+  }
+  @keyframes shimmer { 100% { transform: rotate(360deg); } }
+
+  .fortune-card.reveal {
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.15);
+  }
+
+  .fortune-emoji {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+  }
+  .fortune-emoji.spin {
+    animation: spinEmoji 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes spinEmoji {
+    0% { transform: rotateY(0) scale(0.5); opacity: 0; }
+    50% { transform: rotateY(180deg) scale(1.3); }
+    100% { transform: rotateY(360deg) scale(1); opacity: 1; }
+  }
+
+  .fortune-category {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s ease 0.2s;
+  }
+  .reveal .fortune-category {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .fortune-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text);
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s ease 0.35s;
+  }
+  .reveal .fortune-text {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .fortune-score {
+    margin-top: 16px;
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transition: all 0.4s ease 0.5s;
+  }
+  .reveal .fortune-score {
+    opacity: 1;
+  }
+  .score-bar {
+    width: 200px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px auto 0;
+  }
+  .score-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #ff6b6b, var(--gold), #51cf66);
+    width: 0%;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1) 0.6s;
+  }
+  .score-label {
+    font-size: 0.85rem;
+    color: rgba(240, 230, 255, 0.5);
+  }
+
+  /* Placeholder state */
+  .placeholder {
+    position: relative;
+    z-index: 1;
+  }
+  .placeholder-crystal {
+    font-size: 5rem;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.08); filter: brightness(1.3); }
+  }
+  .placeholder-text {
+    font-size: 0.9rem;
+    color: rgba(240, 230, 255, 0.4);
+    margin-top: 16px;
+  }
+
+  /* Button */
+  .fortune-btn {
+    background: linear-gradient(135deg, var(--gold), #ffaa00);
+    color: #1a1a2e;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1.3rem;
+    border: none;
+    border-radius: 60px;
+    padding: 16px 48px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 25px rgba(255, 215, 0, 0.3);
+    letter-spacing: 2px;
+  }
+  .fortune-btn:active {
+    transform: scale(0.95);
+  }
+  .fortune-btn:hover {
+    box-shadow: 0 6px 35px rgba(255, 215, 0, 0.5);
+    transform: translateY(-2px);
+  }
+  .fortune-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(transparent, rgba(255,255,255,0.2), transparent);
+    transform: rotate(45deg) translateX(-100%);
+    transition: 0.6s;
+  }
+  .fortune-btn:hover::after {
+    transform: rotate(45deg) translateX(100%);
+  }
+
+  .fortune-btn.loading {
+    pointer-events: none;
+    animation: shake 0.5s ease-in-out;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px) rotate(-2deg); }
+    40% { transform: translateX(8px) rotate(2deg); }
+    60% { transform: translateX(-5px) rotate(-1deg); }
+    80% { transform: translateX(5px) rotate(1deg); }
+  }
+
+  .count {
+    margin-top: 24px;
+    font-size: 0.8rem;
+    color: rgba(240, 230, 255, 0.3);
+  }
+
+  /* Confetti burst */
+  .confetti-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .confetti {
+    position: absolute;
+    width: 8px; height: 8px;
+    opacity: 0;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Confetti -->
+<div class="confetti-container" id="confetti"></div>
+
+<div class="app-container">
+  <div class="title">🔮 오늘의 운세</div>
+  <div class="subtitle">수정구슬을 터치하세요</div>
+
+  <div class="fortune-card" id="card">
+    <div class="placeholder" id="placeholder">
+      <div class="placeholder-crystal">🔮</div>
+      <div class="placeholder-text">버튼을 눌러 운세를 확인하세요!</div>
+    </div>
+    <div class="fortune-emoji" id="emoji" style="display:none"></div>
+    <div class="fortune-category" id="category"></div>
+    <div class="fortune-text" id="fortuneText"></div>
+    <div class="fortune-score" id="score">
+      <div class="score-label">행운지수</div>
+      <div class="score-bar"><div class="score-fill" id="scoreFill"></div></div>
+    </div>
+  </div>
+
+  <button class="fortune-btn" id="btn" onclick="drawFortune()">✨ 운세 뽑기 ✨</button>
+  <div class="count" id="count">오늘 뽑은 횟수: 0회</div>
+</div>
+
+<script>
+// 별 생성
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const star = document.createElement('div');
+  star.className = 'star';
+  star.style.left = Math.random() * 100 + '%';
+  star.style.top = Math.random() * 100 + '%';
+  star.style.setProperty('--dur', (1.5 + Math.random() * 3) + 's');
+  star.style.animationDelay = Math.random() * 3 + 's';
+  starsEl.appendChild(star);
+}
+
+const fortunes = [
+  { emoji: '🌟', category: '대길 (大吉)', text: '오늘은 모든 일이 술술 풀리는 날!\n자신감을 갖고 도전하면 좋은 결과가!', score: 95 },
+  { emoji: '🍀', category: '중길 (中吉)', text: '작은 행운이 찾아오는 하루.\n점심 메뉴를 바꿔보면 좋은 일이!', score: 78 },
+  { emoji: '💪', category: '소길 (小吉)', text: '노력한 만큼 보상이 오는 날.\n공부에 집중하면 성적 UP!', score: 65 },
+  { emoji: '😊', category: '길 (吉)', text: '평범하지만 소소한 기쁨이 있는 날.\n친구에게 먼저 말 걸어보세요!', score: 70 },
+  { emoji: '🔥', category: '대박운', text: '예상치 못한 좋은 소식이!\n급식 메뉴가 좋거나, 쪽지시험 없을지도?', score: 88 },
+  { emoji: '💕', category: '연애운 UP', text: '설레는 일이 생길 수도?!\n자연스럽게 행동하는 게 포인트!', score: 82 },
+  { emoji: '📚', category: '공부운 MAX', text: '집중력이 극대화되는 날!\n오늘 공부한 건 머리에 쏙쏙!', score: 90 },
+  { emoji: '🎮', category: '힐링운', text: '쉬어가는 게 필요한 날.\n좋아하는 음악 들으며 힐링하세요!', score: 60 },
+  { emoji: '⚡', category: '반전운', text: '처음엔 별로지만 끝은 좋은 날!\n포기하지 말고 끝까지!', score: 73 },
+  { emoji: '🎯', category: '집중운', text: '목표를 정하면 이루어지는 날!\n하고 싶었던 걸 시작해보세요!', score: 85 },
+  { emoji: '🌈', category: '인간관계 UP', text: '새로운 친구를 사귈 수 있는 날!\n미소가 최고의 무기!', score: 80 },
+  { emoji: '🦋', category: '변화운', text: '작은 변화가 큰 행운으로!\n헤어스타일이나 필통을 바꿔볼까?', score: 72 },
+  { emoji: '🎪', category: '깜짝운', text: '예상 못한 이벤트 발생?!\n열린 마음으로 받아들이면 행운!', score: 77 },
+  { emoji: '🧠', category: '아이디어 폭발', text: '창의력이 터지는 날!\n발표나 과제에서 빛날 수 있어요!', score: 86 },
+  { emoji: '😴', category: '휴식 필요', text: '에너지 충전이 필요한 하루.\n잠깐 낮잠이 보약이 될 수도!', score: 50 },
+];
+
+let drawCount = 0;
+let lastIndex = -1;
+
+function launchConfetti() {
+  const container = document.getElementById('confetti');
+  const colors = ['#ffd700', '#ff6b6b', '#51cf66', '#74c0fc', '#f783ac', '#ffffff'];
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (30 + Math.random() * 40) + '%';
+    c.style.top = '40%';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    c.style.width = (5 + Math.random() * 8) + 'px';
+    c.style.height = (5 + Math.random() * 8) + 'px';
+    c.style.animation = `confettiFall ${1 + Math.random() * 2}s ease-out ${Math.random() * 0.3}s forwards`;
+    container.appendChild(c);
+    setTimeout(() => c.remove(), 3000);
+  }
+}
+
+function drawFortune() {
+  const btn = document.getElementById('btn');
+  const card = document.getElementById('card');
+  const placeholder = document.getElementById('placeholder');
+  const emoji = document.getElementById('emoji');
+  const category = document.getElementById('category');
+  const fortuneText = document.getElementById('fortuneText');
+  const scoreFill = document.getElementById('scoreFill');
+  const scoreEl = document.getElementById('score');
+
+  // 로딩 애니메이션
+  btn.classList.add('loading');
+  card.classList.remove('reveal');
+  scoreFill.style.width = '0%';
+
+  // 랜덤 선택 (이전과 다른 것)
+  let idx;
+  do { idx = Math.floor(Math.random() * fortunes.length); } while (idx === lastIndex);
+  lastIndex = idx;
+  const f = fortunes[idx];
+
+  setTimeout(() => {
+    placeholder.style.display = 'none';
+    emoji.style.display = 'block';
+    emoji.textContent = f.emoji;
+    emoji.className = 'fortune-emoji spin';
+    category.textContent = f.category;
+    fortuneText.textContent = f.text;
+    scoreEl.style.display = 'block';
+
+    card.classList.add('reveal');
+    scoreFill.style.width = f.score + '%';
+
+    if (f.score >= 85) launchConfetti();
+
+    btn.classList.remove('loading');
+    btn.textContent = '🔄 다시 뽑기 🔄';
+
+    drawCount++;
+    document.getElementById('count').textContent = `오늘 뽑은 횟수: ${drawCount}회`;
+  }, 600);
+}
+
+// Service Worker 등록 (PWA)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+
+</body>
+</html>
