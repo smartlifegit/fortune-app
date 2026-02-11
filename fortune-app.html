@@ -282,9 +282,115 @@
     0% { transform: translateY(0) rotate(0deg); opacity: 1; }
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
   }
+
+  /* 종료 버튼 */
+  .close-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 215, 0, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    color: var(--gold);
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  .close-btn:hover {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: var(--gold);
+    transform: scale(1.1);
+  }
+  .close-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* 종료 확인 모달 */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show {
+    display: flex;
+  }
+  .modal-box {
+    background: linear-gradient(135deg, #1e1b4b, #302b63);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 300px;
+    width: 85%;
+    animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .modal-box p {
+    font-size: 1.1rem;
+    margin-bottom: 24px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .modal-btn {
+    padding: 10px 24px;
+    border-radius: 30px;
+    border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .modal-btn:active { transform: scale(0.95); }
+  .modal-btn.cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .modal-btn.cancel:hover { background: rgba(255, 255, 255, 0.2); }
+  .modal-btn.confirm {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+  }
+  .modal-btn.confirm:hover { box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4); }
 </style>
 </head>
 <body>
+
+<!-- 종료 버튼 -->
+<button class="close-btn" onclick="showExitModal()" title="종료">✕</button>
+
+<!-- 종료 확인 모달 -->
+<div class="modal-overlay" id="exitModal">
+  <div class="modal-box">
+    <p>🔮 정말 종료할까요?</p>
+    <div class="modal-buttons">
+      <button class="modal-btn cancel" onclick="hideExitModal()">취소</button>
+      <button class="modal-btn confirm" onclick="exitApp()">종료</button>
+    </div>
+  </div>
+</div>
 
 <!-- Stars -->
 <div class="stars" id="stars"></div>
@@ -412,6 +518,22 @@ function drawFortune() {
 // Service Worker 등록 (PWA)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// 종료 기능
+function showExitModal() {
+  document.getElementById('exitModal').classList.add('show');
+}
+function hideExitModal() {
+  document.getElementById('exitModal').classList.remove('show');
+}
+function exitApp() {
+  // PWA(홈화면 추가)에서는 window.close() 작동
+  // 브라우저에서는 빈 페이지로 이동
+  window.close();
+  setTimeout(() => {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f0c29;color:#ffd700;font-family:sans-serif;font-size:1.3rem;text-align:center;padding:20px;">🔮 앱이 종료되었습니다.<br><br><span style="font-size:0.9rem;color:#aaa;">이 탭을 닫아주세요.</span></div>';
+  }, 300);
 }
 </script>
 
